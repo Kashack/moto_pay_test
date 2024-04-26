@@ -130,9 +130,10 @@ class _DetailsPageState extends State<DetailsPage> {
                 children: [
                   SizedBox(
                     height: 200,
+                    width: double.infinity,
                   ),
                   Text(
-                    "Error Occurred\n Swipe to refresh",
+                    "Error Occurred\n Swipe down to refresh",
                     style: TextStyle(
                       color: Colors.black,
                       fontWeight: FontWeight.bold,

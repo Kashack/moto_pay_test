@@ -4,12 +4,13 @@ class RestApi {
   final dio = Dio();
   final String token = "9edf588451204799a1c04d2494acdd48";
 
+  ///Get Recipes from server
   Future<Response> getRecipes({required int offset}) async {
     final res = await dio.get("https://api.spoonacular.com/recipes/complexSearch",
       queryParameters: {
         "apiKey" : token,
         "cuisine" : "American",
-        "number" : 20,
+        "number" : 15,
         "offset" : offset,
       },
       options: Options(headers: {
@@ -19,6 +20,7 @@ class RestApi {
     return res;
   }
 
+  ///Get recipe detail from server
   Future<Response> getRecipesDetails({required int id}) async {
     final res = await dio.get(
         "https://api.spoonacular.com/recipes/$id/information",

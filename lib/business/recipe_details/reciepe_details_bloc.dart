@@ -13,6 +13,7 @@ part 'reciepe_details_state.dart';
 class RecipeDetailsBloc extends Bloc<RecipeDetailsEvent, RecipeDetailsState> {
   final _api = RestApi();
 
+  ///Communicate with ui and data layer
   RecipeDetailsBloc() : super(const RecipeDetailsState()) {
     on<RecipeDetailsFetched>((event, emit) async {
       emit(state.copyWith(
@@ -41,14 +42,18 @@ class RecipeDetailsBloc extends Bloc<RecipeDetailsEvent, RecipeDetailsState> {
           print(e.type);
           print(e.response);
         }
-        state.copyWith(recipeStatus: DetailsStatus.failed,id: event.id);
+        emit(
+            state.copyWith(recipeStatus: DetailsStatus.failed,id: event.id)
+        );
       } catch (e) {
         if (kDebugMode) {
           print("runtimeType error");
           print(e);
           print(e.runtimeType);
         }
-        state.copyWith(recipeStatus: DetailsStatus.failed,id: event.id);
+        emit(
+            state.copyWith(recipeStatus: DetailsStatus.failed,id: event.id)
+        );
       }
     });
   }

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:bloc/bloc.dart';
 import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
@@ -18,17 +20,11 @@ class PaginationBloc extends Bloc<PaginationEvent, PaginationState> {
   PaginationBloc() : super(const PaginationState()) {
     on<RecipeFetched>((event, emit) async {
       if (state.hasReachedMax) return;
-      if(state.recipes != null) {
-        print("length: ${state.recipes!.length}");
-        print("length: ${event.pageKey}");
-        print("length: ${state.pageKey}");
-      }
       try {
         recipes = state.recipes ?? [];
         final res = await _api.getRecipes(offset: event.pageKey);
         if (res.statusCode == 200) {
           final recipesData = RecipeData.fromJson(res.data);
-          print(recipesData.results!);
           recipes.addAll(recipesData.results!);
           if (recipesData.results!.isEmpty) {
             emit(state.copyWith(hasReachedMax: true));
@@ -43,19 +39,33 @@ class PaginationBloc extends Bloc<PaginationEvent, PaginationState> {
           throw Exception("Error in fetching Recipe");
         }
       } on DioException catch (e) {
-        print("runtimeType");
-        print(e.message);
-        print(e.error);
-        print(e.type);
-        print(e.response);
-        state.copyWith(paginationStatus: PaginationStatus.failure);
+        if (kDebugMode) {
+          print(e.response);
+          print(e.message);
+        }
+        if (DioExceptionType.connectionError ==
+            DioExceptionType.connectionError) {
+          emit(state.copyWith(
+            paginationStatus: PaginationStatus.failure,
+            errorMessage: "Internet connection error",
+          ));
+        }
       } catch (e) {
-        print("runtimeType error");
-        print(e);
-        print(e.runtimeType);
-        state.copyWith(paginationStatus: PaginationStatus.failure);
+        if (kDebugMode) {
+          print("runtimeType error");
+          print(e);
+          print(e.runtimeType);
+        }
+        if (e.runtimeType == SocketException) {
+          emit(state.copyWith(
+            paginationStatus: PaginationStatus.failure,
+            errorMessage: "Internet connection error",
+          ));
+        }
+        emit(state.copyWith(
+          paginationStatus: PaginationStatus.failure,
+        ));
       }
     });
-
   }
 }

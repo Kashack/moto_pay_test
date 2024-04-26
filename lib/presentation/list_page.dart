@@ -21,10 +21,14 @@ class _ListPageState extends State<ListPage> {
 
   @override
   void initState() {
+    ///Listen to when a new list is requires
     _pagingController.addPageRequestListener((pageKey) {
-      Future.delayed(const Duration(seconds: 3),(){
-        context.read<PaginationBloc>().add(RecipeFetched(pageKey: pageKey));
-      },);
+      Future.delayed(
+        const Duration(seconds: 3),
+        () {
+          context.read<PaginationBloc>().add(RecipeFetched(pageKey: pageKey));
+        },
+      );
     });
     super.initState();
   }
@@ -34,14 +38,20 @@ class _ListPageState extends State<ListPage> {
     return BlocListener<PaginationBloc, PaginationState>(
       listener: (context, state) {
         if (state.paginationStatus == PaginationStatus.success) {
-          if (state.recipes!.length >= state.recipeData!.totalResults! || state.hasReachedMax) {
+          if (state.recipes!.length >= state.recipeData!.totalResults! ||
+              state.hasReachedMax) {
             _pagingController.appendLastPage(state.recipeData!.results!);
           } else {
-            _pagingController.appendPage(state.recipeData!.results!, state.pageKey);
+            _pagingController.appendPage(
+                state.recipeData!.results!, state.pageKey);
           }
         } else if (state.paginationStatus == PaginationStatus.failure) {
-          print("Failure");
           _pagingController.error = "Fail to load";
+          _displaySnackBar(
+              message: state.errorMessage != null
+                  ? state.errorMessage!
+                  : "Error Occurred",
+              pageKey: state.pageKey);
         }
       },
       child: Scaffold(
@@ -53,60 +63,66 @@ class _ListPageState extends State<ListPage> {
           child: PagedListView<int, Recipes>(
             pagingController: _pagingController,
             builderDelegate: PagedChildBuilderDelegate<Recipes>(
-                itemBuilder: (context, item, index) {
-              return Material(
-                elevation: 3,
-                color: Colors.white,
-                child: ListTile(
-                  leading: CachedNetworkImage(
-                    imageUrl: item.image ?? "",
-                    width: 80,
-                    height: 80,
-                    fit: BoxFit.fill,
-                    progressIndicatorBuilder:
-                        (context, url, downloadProgress) => Shimmer.fromColors(
-                      baseColor: Colors.grey.shade400,
-                      highlightColor: Colors.grey,
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: ShapeDecoration(
-                          color: Colors.grey,
-                          shape: RoundedRectangleBorder(),
+              itemBuilder: (context, item, index) {
+                return Material(
+                  elevation: 3,
+                  color: Colors.white,
+                  child: ListTile(
+                    leading: CachedNetworkImage(
+                      imageUrl: item.image ?? "",
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.fill,
+                      progressIndicatorBuilder:
+                          (context, url, downloadProgress) =>
+                              Shimmer.fromColors(
+                        baseColor: Colors.grey.shade400,
+                        highlightColor: Colors.grey,
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: ShapeDecoration(
+                            color: Colors.grey,
+                            shape: RoundedRectangleBorder(),
+                          ),
                         ),
                       ),
+                      errorWidget: (context, url, error) => Icon(Icons.error),
                     ),
-                    errorWidget: (context, url, error) => Icon(Icons.error),
+                    contentPadding: EdgeInsets.all(4),
+                    title: Text(item.title!),
+                    onTap: () {
+                      context
+                          .read<RecipeDetailsBloc>()
+                          .add(RecipeDetailsFetched(id: item.id!));
+                      Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const DetailsPage(),
+                          ));
+                    },
                   ),
-                  contentPadding: EdgeInsets.all(4),
-                  title: Text(item.title!),
-                  onTap: () {
-                    context.read<RecipeDetailsBloc>().add(RecipeDetailsFetched(id: item.id!));
-                    Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DetailsPage(),
-                        ));
-                  },
-                ),
-              );
-            },
+                );
+              },
               noMoreItemsIndicatorBuilder: (context) => Center(
                 child: Text("No Item to Load"),
               ),
               firstPageErrorIndicatorBuilder: (context) {
                 return RefreshIndicator(
                   onRefresh: () async {
-                    context.read<PaginationBloc>().add(RecipeFetched(pageKey: 0));
+                    return context
+                        .read<PaginationBloc>()
+                        .add(RecipeFetched(pageKey: 0));
                   },
                   child: const SingleChildScrollView(
                     child: Column(
                       children: [
                         SizedBox(
                           height: 200,
+                          width: double.infinity,
                         ),
                         Text(
-                          "Error Occurred\n Swipe to refresh",
+                          "Error Occurred\n Swipe down to refresh",
                           style: TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.bold,
@@ -123,9 +139,25 @@ class _ListPageState extends State<ListPage> {
                   child: Text("No Reciepe Found"),
                 );
               },
-
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  _displaySnackBar({required String message, required int pageKey}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(color: Colors.white),
+        ),
+        action: SnackBarAction(
+          label: "Retry",
+          onPressed: () {
+            context.read<PaginationBloc>().add(RecipeFetched(pageKey: pageKey));
+          },
         ),
       ),
     );

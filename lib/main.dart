@@ -7,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'business/observer/simple_observer.dart';
 
 void main() {
-  Bloc.observer = const SimpleBlocObserver();
+  Bloc.observer = const SimpleBlocObserver();//Observer Bloc
   runApp(const MyApp());
 }
 
